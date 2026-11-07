@@ -1,0 +1,75 @@
+
+import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+
+const reply = document.getElementById("reply");
+const talkBtn = document.getElementById("talkBtn");
+
+function speak(text) {
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "hi-IN";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(speech);
+}
+
+function askJarvis(message) {
+    const command = message.toLowerCase().trim();
+    let answer = "माफ कीजिए सर, मैं समझ नहीं पाया।";
+
+    if (command.includes("hello") || command.includes("नमस्ते")) {
+        answer = "नमस्ते सर! मैं आपका Jarvis हूँ।";
+    } else if (command.includes("नाम")) {
+        answer = "मेरा नाम Jarvis है।";
+    } else if (command.includes("समय") || command.includes("time")) {
+        answer = "अभी समय है " + new Date().toLocaleTimeString("hi-IN");
+    } else if (command.includes("तारीख") || command.includes("date")) {
+        answer = "आज की तारीख है " + new Date().toLocaleDateString("hi-IN");
+    } else if (command.includes("कैसे हो")) {
+        answer = "मैं बिल्कुल ठीक हूँ सर।";
+    }
+
+    reply.innerText = answer;
+    speak(answer);
+}
+
+async function startJarvis() {
+    try {
+        reply.innerText = "Microphone permission माँगी जा रही है...";
+
+        const permission = await SpeechRecognition.requestPermissions();
+
+        if (permission.speechRecognition !== "granted") {
+            reply.innerText = "Microphone permission नहीं मिली।";
+            return;
+        }
+
+        const result = await SpeechRecognition.available();
+
+        if (!result.available) {
+            reply.innerText = "Speech Recognition उपलब्ध नहीं है।";
+            return;
+        }
+
+        reply.innerText = "सुन रहा हूँ सर...";
+
+        const response = await SpeechRecognition.start({
+            language: "hi-IN",
+            maxResults: 1,
+            prompt: "बोलिए सर",
+            popup: true,
+            partialResults: false
+        });
+
+        if (response.matches && response.matches.length > 0) {
+            reply.innerText = "आपने कहा: " + response.matches[0];
+            askJarvis(response.matches[0]);
+        } else {
+            reply.innerText = "आवाज समझ नहीं आई। दोबारा कोशिश करें।";
+        }
+
+    } catch (error) {
+        reply.innerText = "Error: " + error.message;
+        console.log(error);
+    }
+}
+
+talkBtn.addEventListener("click", startJarvis);
